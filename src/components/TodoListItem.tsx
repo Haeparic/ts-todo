@@ -17,7 +17,14 @@ const TodoListItem = (props: propsType) => {
       </Space>
       <Space>
         <Button>Edit</Button>
-        <Button danger>Delete</Button>
+        <Button
+          danger
+          onClick={() => {
+            props.deleteTodo(props.todoItem);
+          }}
+        >
+          Delete
+        </Button>
       </Space>
     </List.Item>
   );
