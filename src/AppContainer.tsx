@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // 객체복사 라이브러리
 import produce from "immer";
 import App from "./App";
+import moment from "moment";
 
 export type TodoType = {
   uid: string;
@@ -12,42 +13,47 @@ export type TodoType = {
   date: string;
 };
 
+// 상태를 변경하는 함수를 묶어서 타입으로 정의해 볼까?
+// 꼭 타입으로 정의해서 진행하지 않아도 됨, 즉, 처음부터 최적화를 하는것은 좋지 않음
+// 나 혼자 관리하는 개발을 주도 : 타입정의 하는 것이 좋다
+// 타인과 개발한다 : 고려해 봐야 한다
+// 단점 : 타인이 Type 에 대한 구성을 파악하고 학습할 시간이 필요
+// 장점 : 오류가 줄어듦(오타, 데이터 값의 종류), 안정성이 높아짐
+export type StatesType = {
+  todoList: Array<TodoType>;
+};
+
+export type CallBacksType = {
+  addTodo: (
+    uid: string,
+    title: string,
+    body: string,
+    done: boolean,
+    sticker: string,
+    date: string
+  ) => void;
+  updateTodo: (todo: TodoType) => void;
+  deleteTodo: (todo: TodoType) => void;
+  sortTodo: (sortType: string) => void;
+  clearTodo?: () => void;
+};
+
 const AppContainer = () => {
   // 상태데이터
-  const initData: Array<TodoType> = [
-    {
-      uid: "1",
-      title: "할일 1",
-      body: "내용 1",
-      done: false,
-      sticker: "1",
-      date: "2023-02-27",
-    },
-    {
-      uid: "2",
-      title: "할일 2",
-      body: "내용 2",
-      done: false,
-      sticker: "2",
-      date: "2023-02-27",
-    },
-    {
-      uid: "3",
-      title: "할일 3",
-      body: "내용 3",
-      done: false,
-      sticker: "3",
-      date: "2023-02-27",
-    },
-    {
-      uid: "4",
-      title: "할일 4",
-      body: "내용 4",
-      done: false,
-      sticker: "4",
-      date: "2023-02-27",
-    },
-  ];
+  let initData: Array<TodoType> = [];
+  // 로컬스토리지 이름
+  const localStorageName = "tstodo";
+  // 로컬스토리지 활용
+  const getLocalData = () => {
+    const data = localStorage.getItem(localStorageName);
+    if (data !== null) {
+      initData = JSON.parse(data);
+      setTodoList(initData);
+    }
+  };
+  useEffect(() => {
+    getLocalData();
+  }, []);
   // 화면의 내용을 갱신해 주기 위해서 state Hook 사용
   const [todoList, setTodoList] = useState<Array<TodoType>>(initData);
   // 추가기능
@@ -78,9 +84,31 @@ const AppContainer = () => {
     });
     // state 업데이트 : 화면 갱신
     setTodoList(newTodoList);
+
+    localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
   };
   // 수정기능
-  const updateTodo = (todo: TodoType) => {};
+  const updateTodo = (todo: TodoType) => {
+    // console.log("갱신될 내용 : ", todo);
+    // 1. 먼저 uid 를 비교해서 배열의 순서에 맞는 1개를 찾는다.
+    const index = todoList.findIndex((item) => item.uid === todo.uid);
+    // console.log("갱신될 index : ", index);
+    // 2. 해당하는 uid 의 내용을 갱신한다.
+    const newTodoList = produce(todoList, (draft) => {
+      draft[index] = {
+        ...draft[index],
+        title: todo.title,
+        body: todo.body,
+        date: moment(todo.date).format("YYYY-MM-DD"),
+        done: todo.done,
+        sticker: todo.sticker,
+      };
+    });
+    // 3. state를 업데이트한다.
+    setTodoList(newTodoList);
+
+    localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
+  };
   // 삭제기능
   const deleteTodo = (todo: TodoType) => {
     let index = todoList.findIndex((item) => todo.uid === item.uid);
@@ -93,18 +121,32 @@ const AppContainer = () => {
       draft.splice(index, 1);
     });
     setTodoList(newTodoList);
+
+    localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
+  };
+  // 전체 목록 삭제
+  const clearTodo = () => {
+    setTodoList([]);
+    localStorage.removeItem(localStorageName);
   };
   // 정렬기능
   const sortTodo = (sortType: string) => {};
-  return (
-    <App
-      todoList={todoList}
-      addTodo={addTodo}
-      updateTodo={updateTodo}
-      deleteTodo={deleteTodo}
-      sortTodo={sortTodo}
-    />
-  );
+
+  // 데이터 목록의 타입
+  const states: StatesType = {
+    todoList,
+  };
+
+  // state 관리기능타입
+  const callBacks: CallBacksType = {
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    sortTodo,
+    clearTodo,
+  };
+
+  return <App states={states} callBacks={callBacks} />;
 };
 
 export default AppContainer;
