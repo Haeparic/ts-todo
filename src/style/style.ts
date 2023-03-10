@@ -2,9 +2,9 @@ import styled from "@emotion/styled";
 // 전체 레이아웃
 export const Wrapper = styled.div`
   position: relative;
-  max-width: 1024px;
+  max-width: 560px;
   margin: 0 auto;
-  margin-top: 50px;
+  margin-top: 20px;
   background: #fff;
 `;
 // 공통 레이아웃

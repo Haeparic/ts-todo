@@ -1,8 +1,21 @@
+// firebase 관련
+import { fireDB } from "./firebase";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+
 import { useEffect, useState } from "react";
 // 객체복사 라이브러리
 import produce from "immer";
 import App from "./App";
 import moment from "moment";
+import { async } from "@firebase/util";
 
 export type TodoType = {
   uid: string;
@@ -41,23 +54,43 @@ export type CallBacksType = {
 const AppContainer = () => {
   // 상태데이터
   let initData: Array<TodoType> = [];
+
   // 로컬스토리지 이름
   const localStorageName = "tstodo";
-  // 로컬스토리지 활용
-  const getLocalData = () => {
-    const data = localStorage.getItem(localStorageName);
+
+  // firebase Storage 이름
+  const firebaseStorageName = "tsmemo";
+  // 컬렉션(DataBase 단위 : MongoDB 참조) 불러오기
+  const memoCollectionRef = collection(fireDB, firebaseStorageName);
+
+  // 로컬스토리지 활용 -> firebase 로 변경
+  const getLocalData = async () => {
+    // const data = localStorage.getItem(localStorageName);
+    const q = await query(memoCollectionRef);
+    const data = await getDocs(q);
+    // console.log("firebase collection data : ", data);
+
     if (data !== null) {
-      initData = JSON.parse(data);
+      // initData = JSON.parse(data);
+      // 모든 데이터 가져와서 뜯기
+      // [ {}, {}, {}, ... ]
+      const firebaseData = data.docs.map((doc) => ({
+        ...doc.data(),
+      }));
+      // firebaseData = [ {}, {}, {}, ... ]
+      const initData = firebaseData.map((item) => {
+        // firebase 에서 가져온 데이터를 TypeScript 에서 우리가 만든 Type 으로 형변환하기
+        return item as TodoType;
+      });
+      // setTodoList(Array<TodoType>) 형을 원했다
       setTodoList(initData);
     }
   };
-  useEffect(() => {
-    getLocalData();
-  }, []);
+
   // 화면의 내용을 갱신해 주기 위해서 state Hook 사용
   const [todoList, setTodoList] = useState<Array<TodoType>>(initData);
   // 추가기능
-  const addTodo = (
+  const addTodo = async (
     uid: string,
     title: string,
     body: string,
@@ -65,6 +98,21 @@ const AppContainer = () => {
     sticker: string,
     date: string
   ) => {
+    // firebase 에 쓰기
+    try {
+      const res = await setDoc(doc(fireDB, firebaseStorageName, uid), {
+        uid: uid,
+        title: title,
+        body: body,
+        date: date,
+        sticker: sticker,
+        done: false,
+      });
+      console.log(res); // res는 undefined입니다.
+    } catch (e) {
+      console.log(e);
+    }
+
     // 새로운 todoType 생성
     // 기존 todoList state 를 복사하고, 추가 todoList 를 합쳐주고
     // todoList state 를 업데이트한다.
@@ -85,10 +133,27 @@ const AppContainer = () => {
     // state 업데이트 : 화면 갱신
     setTodoList(newTodoList);
 
-    localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
+    // localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
   };
   // 수정기능
-  const updateTodo = (todo: TodoType) => {
+  const updateTodo = async (todo: TodoType) => {
+    // 원하는 데이터 가져옴
+    const userDoc = doc(fireDB, firebaseStorageName, todo.uid);
+    try {
+      const res = await updateDoc(userDoc, {
+        title: todo.title,
+        body: todo.body,
+        sticker: todo.sticker,
+        done: todo.done,
+        date: moment(todo.date).format("YYYY-MM-DD"),
+      });
+      console.log(res); // res는 undefined
+    } catch (e) {
+      // console.log(e);
+    } finally {
+      // console.log("end");
+    }
+
     // console.log("갱신될 내용 : ", todo);
     // 1. 먼저 uid 를 비교해서 배열의 순서에 맞는 1개를 찾는다.
     const index = todoList.findIndex((item) => item.uid === todo.uid);
@@ -107,10 +172,22 @@ const AppContainer = () => {
     // 3. state를 업데이트한다.
     setTodoList(newTodoList);
 
-    localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
+    // localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
   };
+
   // 삭제기능
-  const deleteTodo = (todo: TodoType) => {
+  const deleteTodo = async (todo: TodoType) => {
+    // firebase 데이터 1개 삭제
+    const userDoc = doc(fireDB, firebaseStorageName, todo.uid);
+    try {
+      const res = await deleteDoc(userDoc);
+      console.log(res); // res는 undefined
+    } catch (e) {
+      console.log(e);
+    } finally {
+      console.log("end");
+    }
+
     let index = todoList.findIndex((item) => todo.uid === item.uid);
     // state 의 목록을 삭제 후 갱신한다. 불변성 라이브러리 (immer) 활용
     // let newTodoList = produce(대상, (draft)=>{})
@@ -122,7 +199,7 @@ const AppContainer = () => {
     });
     setTodoList(newTodoList);
 
-    localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
+    // localStorage.setItem(localStorageName, JSON.stringify(newTodoList));
   };
   // 전체 목록 삭제
   const clearTodo = () => {
@@ -145,6 +222,10 @@ const AppContainer = () => {
     sortTodo,
     clearTodo,
   };
+
+  useEffect(() => {
+    getLocalData();
+  }, []);
 
   return <App states={states} callBacks={callBacks} />;
 };

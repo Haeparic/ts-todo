@@ -61,7 +61,7 @@ const TodoList = ({
           Delete All
         </Button>
       ) : (
-        <span>목록이 없습니다.</span>
+        <span>등록된 내용이 없습니다.</span>
       )}
       <List>{items}</List>
       <Modal
