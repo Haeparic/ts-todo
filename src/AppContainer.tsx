@@ -1,5 +1,5 @@
 // firebase 관련
-import { fireDB } from "./firebase";
+import { fireDB, auth } from "./firebase";
 import {
   collection,
   deleteDoc,
@@ -15,7 +15,12 @@ import { useEffect, useState } from "react";
 import produce from "immer";
 import App from "./App";
 import moment from "moment";
-import { async } from "@firebase/util";
+import {
+  createUserWithEmailAndPassword,
+  deleteUser,
+  signInWithEmailAndPassword,
+  User,
+} from "firebase/auth";
 
 export type TodoType = {
   uid: string;
@@ -51,12 +56,20 @@ export type CallBacksType = {
   clearTodo?: () => void;
 };
 
+// 로그인 및 회원가입 타입 정의
+export type CallBacksFireBaseType = {
+  fbLogin: (email: string, passwoard: string) => void;
+  fbJoin: (email: string, passwoard: string) => void;
+  fbLogout: () => void;
+  fbDeleteUser: () => void;
+};
+
 const AppContainer = () => {
   // 상태데이터
   let initData: Array<TodoType> = [];
 
   // 로컬스토리지 이름
-  const localStorageName = "tstodo";
+  // const localStorageName = "tstodo";
 
   // firebase Storage 이름
   const firebaseStorageName = "tsmemo";
@@ -204,7 +217,21 @@ const AppContainer = () => {
   // 전체 목록 삭제
   const clearTodo = () => {
     setTodoList([]);
-    localStorage.removeItem(localStorageName);
+
+    todoList.forEach(async (element) => {
+      // firebase 데이터 1개 삭제
+      const userDoc = doc(fireDB, firebaseStorageName, element.uid);
+      try {
+        const res = await deleteDoc(userDoc);
+        // console.log(res); // res는 undefined
+      } catch (e) {
+        console.log(e);
+      } finally {
+        console.log("end");
+      }
+    });
+
+    // localStorage.removeItem(localStorageName);
   };
   // 정렬기능
   const sortTodo = (sortType: string) => {};
@@ -223,11 +250,82 @@ const AppContainer = () => {
     clearTodo,
   };
 
+  // 현재 사용자가 로그인 된 상태인지 아닌지 구별
+  const [userLogin, setUserLogin] = useState(false);
+
+  // 사용자 로그인 기능
+  const fbLogin = (email: string, password: string) => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in
+        const user = userCredential.user;
+        console.log(user);
+        setUserLogin(true);
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log("errorCode : ", errorCode);
+        console.log("errorMessage : ", errorMessage);
+      });
+  };
+
+  // 사용자 가입
+  const fbJoin = (email: string, password: string) => {
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in
+        const user = userCredential.user;
+        console.log(user);
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log("errorCode : ", errorCode);
+        console.log("errorMessage : ", errorMessage);
+      });
+  };
+
+  // 사용자 로그아웃
+  const fbLogout = () => {
+    auth.signOut();
+    setUserLogin(false);
+  };
+
+  // 회원탈퇴
+  const fbDeleteUser = async () => {
+    await deleteUser(auth.currentUser as User)
+      .then(() => {
+        // User deleted.
+        setUserLogin(false);
+      })
+      .catch((error) => {
+        // An error ocurred
+        // ...
+        console.log("회원 탈퇴 실패");
+      });
+  };
+
+  // 로그인 관리 기능 타입
+  const callBacksFireBase: CallBacksFireBaseType = {
+    fbLogin,
+    fbJoin,
+    fbLogout,
+    fbDeleteUser,
+  };
+
   useEffect(() => {
     getLocalData();
   }, []);
 
-  return <App states={states} callBacks={callBacks} />;
+  return (
+    <App
+      states={states}
+      callBacks={callBacks}
+      callBacksFireBase={callBacksFireBase}
+      userLogin={userLogin}
+    />
+  );
 };
 
 export default AppContainer;
