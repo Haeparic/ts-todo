@@ -1,3 +1,13 @@
+// store 관련
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "./store/store";
+import {
+  fbLoginState,
+  fbJoinState,
+  fbLogoutState,
+  fbDeleteUserState,
+} from "./store/userSlice";
+
 // firebase 관련
 import { fireDB, auth } from "./firebase";
 import {
@@ -65,6 +75,10 @@ export type CallBacksFireBaseType = {
 };
 
 const AppContainer = () => {
+  // store 관련
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+
   // 상태데이터
   let initData: Array<TodoType> = [];
 
@@ -251,7 +265,7 @@ const AppContainer = () => {
   };
 
   // 현재 사용자가 로그인 된 상태인지 아닌지 구별
-  const [userLogin, setUserLogin] = useState(false);
+  // const [userLogin, setUserLogin] = useState(false);
 
   // 사용자 로그인 기능
   const fbLogin = (email: string, password: string) => {
@@ -260,7 +274,8 @@ const AppContainer = () => {
         // Signed in
         const user = userCredential.user;
         console.log(user);
-        setUserLogin(true);
+        // setUserLogin(true);
+        dispatch(fbLoginState({ email, password }));
       })
       .catch((error) => {
         const errorCode = error.code;
@@ -277,6 +292,7 @@ const AppContainer = () => {
         // Signed in
         const user = userCredential.user;
         console.log(user);
+        dispatch(fbJoinState());
       })
       .catch((error) => {
         const errorCode = error.code;
@@ -289,7 +305,8 @@ const AppContainer = () => {
   // 사용자 로그아웃
   const fbLogout = () => {
     auth.signOut();
-    setUserLogin(false);
+    // setUserLogin(false);
+    dispatch(fbLogoutState());
   };
 
   // 회원탈퇴
@@ -297,7 +314,8 @@ const AppContainer = () => {
     await deleteUser(auth.currentUser as User)
       .then(() => {
         // User deleted.
-        setUserLogin(false);
+        // setUserLogin(false);
+        dispatch(fbDeleteUserState());
       })
       .catch((error) => {
         // An error ocurred
@@ -323,7 +341,7 @@ const AppContainer = () => {
       states={states}
       callBacks={callBacks}
       callBacksFireBase={callBacksFireBase}
-      userLogin={userLogin}
+      userLogin={user.userLogin}
     />
   );
 };
