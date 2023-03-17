@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 // slice 불러들임
 import counterReducer from "./counterSlice";
 import userReducer from "./userSlice";
+import todoReducer from "./todoSlice";
 // persist 적용
 import storage from "redux-persist/lib/storage";
 import { combineReducers } from "redux";
@@ -10,7 +11,9 @@ import { persistReducer } from "redux-persist";
 const reducers = combineReducers({
   counter: counterReducer,
   user: userReducer,
+  todo: todoReducer,
 });
+
 const persistConfig = {
   key: "root",
   storage,
