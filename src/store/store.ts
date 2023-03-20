@@ -8,10 +8,18 @@ import storage from "redux-persist/lib/storage";
 import { combineReducers } from "redux";
 import { persistReducer } from "redux-persist";
 
+// saga 샘플
+// import fbUserSliceReducer from "./fbUserSlice";
+// import createSagaMiddleware from "@redux-saga/core";
+// import fbUserSaga from "./fbUserSaga";
+// const saga = createSagaMiddleware();
+
 const reducers = combineReducers({
   counter: counterReducer,
   user: userReducer,
   todo: todoReducer,
+  // saga
+  // todosaga: fbUserSliceReducer,
 });
 
 const persistConfig = {
@@ -30,6 +38,10 @@ export const store = configureStore({
   //     user: userReducer,
   //   },
   reducer: presistedReducer,
+
+  // saga
+  // middleware: [saga];
+
   // 임시로 middleware 체크 기능 제거
   middleware: (getDefaultMiddleware) => {
     return getDefaultMiddleware({
@@ -37,6 +49,9 @@ export const store = configureStore({
     });
   },
 });
+
+// saga 감시 실행
+// saga.run(fbUserSaga);
 
 // useSelector 를 사용하는 경우에 지정할 타입을 작성
 export type RootState = ReturnType<typeof store.getState>;
