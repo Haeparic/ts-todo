@@ -6,6 +6,10 @@ import {
   fbJoinState,
   fbLogoutState,
   fbDeleteUserState,
+  fbLoginFB,
+  fbJoinFB,
+  fbLogoutFB,
+  fbDeleteUserFB,
 } from "./store/userSlice";
 import {
   initTodoState,
@@ -149,60 +153,19 @@ const AppContainer = () => {
 
   // 사용자 로그인 기능
   const fbLogin = (email: string, password: string) => {
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Signed in
-        const user = userCredential.user;
-        console.log(user);
-
-        dispatch(fbLoginState({ email, password }));
-        // setUserLogin(true);
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log("errorCode : ", errorCode);
-        console.log("errorMessage : ", errorMessage);
-      });
+    dispatch(fbLoginFB({ email, password }));
   };
   // 사용자 가입
   const fbJoin = (email: string, password: string) => {
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Signed in
-        const user = userCredential.user;
-        console.log(user);
-        // 생각을 더 해보자 ????
-        dispatch(fbJoinState());
-        // setUserLogin(true);
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log("errorCode : ", errorCode);
-        console.log("errorMessage : ", errorMessage);
-      });
+    dispatch(fbJoinFB({ email, password }));
   };
   // 사용자 로그아웃
   const fbLogout = () => {
-    auth.signOut();
-
-    dispatch(fbLogoutState());
-    // setUserLogin(false);
+    dispatch(fbLogoutFB());
   };
   // 회원탈퇴
   const fbDeleteUser = async () => {
-    await deleteUser(auth.currentUser as User)
-      .then(() => {
-        // User deleted.
-        dispatch(fbDeleteUserState());
-        // setUserLogin(false);
-      })
-      .catch((error) => {
-        // An error ocurred
-        // ...
-        console.log("회원 탈퇴 실패");
-      });
+    dispatch(fbDeleteUserFB());
   };
 
   // 로그인 관리 기능 타입
