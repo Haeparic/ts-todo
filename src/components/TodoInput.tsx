@@ -43,7 +43,7 @@ const TodoInput = (props: propsType) => {
   // 필수 항목 작성시
   const onFinish = (values: any) => {
     openNotification("top");
-    let day = moment(values.date).format("YYYY-MM-DD");
+    let day = moment(values.date.$d).format("YYYY-MM-DD");
     // console.log("Success:", values);
     // 새로운 아이템
     // const todoItem: TodoType = {
